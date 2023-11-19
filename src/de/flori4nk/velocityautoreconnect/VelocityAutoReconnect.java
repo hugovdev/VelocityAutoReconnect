@@ -103,33 +103,35 @@ public class VelocityAutoReconnect {
         eventManager.register(this, new ConnectionListener());
         eventManager.register(this, new KickListener());
 
-        // Schedule the reconnector task
+        // Schedule the re-connector task
         proxyServer.getScheduler().buildTask(this, () -> {
-            Collection<Player> connectedPlayers = limboServer.getPlayersConnected();
-            // Prevent NullPointerException when Limbo is empty
-            if (connectedPlayers.isEmpty()) return;
-            
-            Player nextPlayer = connectedPlayers.iterator().next();
-            RegisteredServer previousServer = playerManager.getPreviousServer(nextPlayer);
+                    Collection<Player> connectedPlayers = limboServer.getPlayersConnected();
+                    // Prevent NullPointerException when Limbo is empty
+                    if (connectedPlayers.isEmpty()) return;
 
-            // If enabled, check if a server responds to pings before connecting
-            try {
-                if (configurationManager.getBooleanProperty("pingcheck")) {
-                    try {
-                        previousServer.ping().join();
-                    } catch (CompletionException completionException) {
-                        // Server failed to respond to ping request, return to prevent spam
-                        return;
-                    }
-                }
-                Utility.logInformational(String.format("Connecting %s to %s.", nextPlayer.getUsername(), previousServer.getServerInfo().getName()));
-                nextPlayer.createConnectionRequest(previousServer).connect();
-            } catch (CompletionException exception) {
-                // Prevent console from being spammed when a server is offline and ping-check is disabled
-            }
-        })
-            .repeat(configurationManager.getIntegerProperty("task-interval-ms"), TimeUnit.MILLISECONDS)
-            .schedule();
+                    // Send players back to their previous server in batches of 10.
+                    connectedPlayers.stream().limit(10).forEach(nextPlayer -> {
+                        RegisteredServer previousServer = playerManager.getPreviousServer(nextPlayer);
+
+                        // If enabled, check if a server responds to pings before connecting
+                        try {
+                            if (configurationManager.getBooleanProperty("pingcheck")) {
+                                try {
+                                    previousServer.ping().join();
+                                } catch (CompletionException completionException) {
+                                    // Server failed to respond to ping request, return to prevent spam
+                                    return;
+                                }
+                            }
+                            Utility.logInformational(String.format("Connecting %s to %s.", nextPlayer.getUsername(), previousServer.getServerInfo().getName()));
+                            nextPlayer.createConnectionRequest(previousServer).connect();
+                        } catch (CompletionException exception) {
+                            // Prevent console from being spammed when a server is offline and ping-check is disabled
+                        }
+                    });
+                })
+                .repeat(configurationManager.getIntegerProperty("task-interval-ms"), TimeUnit.MILLISECONDS)
+                .schedule();
     }
 
 
