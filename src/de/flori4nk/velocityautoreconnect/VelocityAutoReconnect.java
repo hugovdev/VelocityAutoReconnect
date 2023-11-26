@@ -29,6 +29,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import de.flori4nk.velocityautoreconnect.listeners.ConnectionListener;
 import de.flori4nk.velocityautoreconnect.listeners.KickListener;
+import de.flori4nk.velocityautoreconnect.listeners.MusicPlayer;
 import de.flori4nk.velocityautoreconnect.misc.Utility;
 import de.flori4nk.velocityautoreconnect.storage.ConfigurationManager;
 import de.flori4nk.velocityautoreconnect.storage.PlayerManager;
@@ -102,6 +103,7 @@ public class VelocityAutoReconnect {
 
         eventManager.register(this, new ConnectionListener());
         eventManager.register(this, new KickListener());
+        eventManager.register(this, new MusicPlayer());
 
         // Schedule the re-connector task
         proxyServer.getScheduler().buildTask(this, () -> {
